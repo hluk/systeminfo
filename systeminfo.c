@@ -14,51 +14,6 @@
 #define DELAY 1
 #endif
 
-#define LABEL_UPTIME \
-                "UP:%d:%02d  "
-#define VALUE_UPTIME \
-                hours, minutes,
-
-#define LABEL_CPU \
-                "CPU:%d%%  "
-#define VALUE_CPU \
-                cpu,
-
-#define LABEL_LOAD \
-                "LOAD:%2.2f %2.2f %2.2f  "
-#define VALUE_LOAD \
-                s.loads[0]/LOADS_SCALE, s.loads[1]/LOADS_SCALE, s.loads[2]/LOADS_SCALE,
-
-#define LABEL_DISK \
-                "ROOT:%d/%dGiB  "
-#define VALUE_DISK \
-                (int)((fs.f_bavail*fs.f_bsize) >> 30), (int)((fs.f_blocks*fs.f_bsize) >> 30),
-
-#define LABEL_MEMORY \
-                "MEM:%ldMiB  "
-#define VALUE_MEMORY \
-                (s.totalram - s.freeram)>>20,
-
-#define LABEL_BATTERY \
-                "BAT:%d%%  "
-#define VALUE_BATTERY \
-                100*bat/bat_full,
-
-#define LABEL_TEMPERATURE \
-                "TEMP:%s°  "
-#define VALUE_TEMPERATURE \
-                temp,
-
-#define LABEL_NETWORK \
-                "%s:%.2f %.2f  "
-#define VALUE_NETWORK \
-                eth_name, downspeed, upspeed,
-
-#define LABEL_TIME \
-                "%02d/%02d %02d:%02d "
-#define VALUE_TIME \
-                t->tm_mday, t->tm_mon, t->tm_hour, t->tm_min
-
 int main()
 {
 	struct sysinfo s;
@@ -86,7 +41,7 @@ int main()
     int bat_full = 0;
     int bat;
 
-    char temp[3];
+    int temp;
 
 #ifdef PRINT_BATTERY
     f = fopen("/proc/acpi/battery/BAT0/info", "r");
@@ -182,7 +137,9 @@ int main()
 #ifdef PRINT_TEMPERATURE
         f = fopen("/sys/class/hwmon/hwmon0/temp1_input", "r");
         if (f) {
-            fgets(temp, 3, f);
+            if ( fgets(buf, BUFSIZ, f) ) {
+                sscanf(buf, "%d", &temp);
+            }
             fclose(f);
         }
 #endif
@@ -218,7 +175,7 @@ int main()
         }
 #endif
 
-        printf(PRINT_LABELS "\n", PRINT_VALUES);
+        STATUS;
         fflush(stdout);
 
         sleep(DELAY);

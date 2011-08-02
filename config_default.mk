@@ -1,0 +1,11 @@
+# status message format
+STATUS = UP:$(UP_HOURS):$(call UP_MINUTES,02)  CPU:$(CPU)%  LOAD:$(call LOAD1,2.2) $(call LOAD2,2.2) $(call LOAD3,2.2)  MEM:$(MEM_USED)MiB  ROOT:$(ROOT_FREE)/$(ROOT_SIZE)GiB  BAT:$(BATTERY)%  TEMP:$(TEMPERATURE)°  $(ETH1_NAME):$(call ETH1_DOWNSPEED,.2) $(call ETH1_UPSPEED,.2)  $(DATE_MONTHDAY)/$(DATE_MONTH) $(call DATE_HOURS,02):$(call DATE_MINUTES,02)
+# update every second
+DELAY = 1
+
+# features
+FEATURES = UPTIME CPU LOAD DISK MEMORY BATTERY TEMPERATURE NETWORK TIME
+
+#CFLAGS = -ggdb -O0 -Wall
+#CFLAGS = -Os -Wall
+

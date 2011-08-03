@@ -14,6 +14,35 @@
 #define DELAY 1
 #endif
 
+#define UP_HOURS (hours)
+#define UP_MINUTES (minutes)
+#define CPU_TOTAL (cpu_total)
+#define CPU_ACTIVE (cpu_active)
+#define CPU (((cpu_active-cpu_last_active)<<10)/(cpu_total-cpu_last_total))
+#define CPU_PERCENT (100*(cpu_active-cpu_last_active)/(cpu_total-cpu_last_total))
+#define LOAD1 (s.loads[0]/LOADS_SCALE)
+#define LOAD2 (s.loads[1]/LOADS_SCALE)
+#define LOAD3 (s.loads[2]/LOADS_SCALE)
+#define ROOT_SIZE ((int)((fs.f_blocks*fs.f_bsize) >> 30))
+#define ROOT_FREE ((int)((fs.f_bavail*fs.f_bsize) >> 30))
+#define ROOT_USED ((int)(((fs.f_blocks-fs.f_bavail)*fs.f_bsize) >> 30))
+#define MEM_SIZE ((int)(s.totalram>>20))
+#define MEM_FREE ((int)(s.freeram>>20))
+#define MEM_USED ((int)((s.totalram - s.freeram)>>20))
+#define BATTERY (100*bat/bat_full)
+#define TEMPERATURE (temp/1000)
+#define ETH1_NAME (eth_name)
+#define ETH1_DOWNSPEED (downspeed)
+#define ETH1_UPSPEED (upspeed)
+#define DATE_YEAR (t->tm_year)
+#define DATE_MONTH (t->tm_mon)
+#define DATE_MONTHDAY (t->tm_mday)
+#define DATE_WEEKDAY (t->tm_wday)
+#define DATE_YEARDAY (t->tm_yday)
+#define DATE_HOURS (t->tm_hour)
+#define DATE_MINUTES (t->tm_min)
+#define DATE_SECONDS (t->tm_sec)
+
 int main()
 {
 	struct sysinfo s;
@@ -28,15 +57,15 @@ int main()
 
 	FILE *f;
     int cpu_user, cpu_nice, cpu_sys, cpu_idle, cpu_iowait, cpu_irq, cpu_softirq,
-        cpu_steal, cpu_total, cpu_active, cpu = 0;
-    int cpu_last_total = 0;
-    int cpu_last_active = 0;
+        cpu_steal, cpu_total, cpu_active;
+    int cpu_last_total;
+    int cpu_last_active;
 
     char buf[BUFSIZ];
     char *eth_name = "", *p = "";
 
     float downspeed = 0, upspeed = 0;
-    long long recv, transmit, last_recv = 0, last_transmit = 0;
+    long long recv, transmit, last_recv, last_transmit;
 
     int bat_full = 0;
     int bat;
@@ -75,7 +104,7 @@ int main()
             p++;
 
             sscanf(p, "%lld  %*d     %*d  %*d  %*d  %*d   %*d        %*d       %lld",
-                    &last_recv, &last_transmit);
+                    &recv, &transmit);
         }
         fclose(f);
     }
@@ -108,12 +137,11 @@ int main()
             if ( fscanf(f, "cpu  %d %d %d %d %d %d %d %d",
                         &cpu_user, &cpu_nice, &cpu_sys, &cpu_idle, &cpu_iowait,
                         &cpu_irq, &cpu_softirq, &cpu_steal ) == 8 ) {
+                cpu_last_total = cpu_total;
+                cpu_last_active = cpu_active;
                 cpu_total = cpu_user + cpu_nice + cpu_sys + cpu_idle + cpu_iowait +
                         cpu_irq + cpu_softirq + cpu_steal;
                 cpu_active = cpu_total - (cpu_idle + cpu_iowait);
-                cpu = 100*(cpu_active - cpu_last_active)/(cpu_total-cpu_last_total); 
-                cpu_last_active = cpu_active;
-                cpu_last_total = cpu_total;
             }
             fclose(f);
         }
@@ -164,18 +192,19 @@ int main()
                 *p = '\0';
                 p++;
 
+                last_recv = recv;
+                last_transmit = transmit;
                 sscanf(p, "%lld  %*d     %*d  %*d  %*d  %*d   %*d        %*d       %lld",
                         &recv, &transmit);
                 downspeed = (float)((recv-last_recv)/DELAY)/1024;
                 upspeed = (float)((transmit-last_transmit)/DELAY)/1024;
-                last_recv = recv;
-                last_transmit = transmit;
             }
             fclose(f);
         }
 #endif
 
-        STATUS;
+#define IGNORE(x)
+        printf(PRINT_STR, PRINT_ARGS);
         fflush(stdout);
 
         sleep(DELAY);

@@ -20,9 +20,9 @@
 #define CPU_ACTIVE (cpu_active)
 #define CPU (((cpu_active-cpu_last_active)<<10)/(cpu_total-cpu_last_total))
 #define CPU_PERCENT (100*(cpu_active-cpu_last_active)/(cpu_total-cpu_last_total))
-#define LOAD1 (s.loads[0]/LOADS_SCALE)
-#define LOAD2 (s.loads[1]/LOADS_SCALE)
-#define LOAD3 (s.loads[2]/LOADS_SCALE)
+#define LOAD_1 (s.loads[0]/LOADS_SCALE)
+#define LOAD_2 (s.loads[1]/LOADS_SCALE)
+#define LOAD_3 (s.loads[2]/LOADS_SCALE)
 #define ROOT_SIZE ((int)((fs.f_blocks*fs.f_bsize) >> 30))
 #define ROOT_FREE ((int)((fs.f_bavail*fs.f_bsize) >> 30))
 #define ROOT_USED ((int)(((fs.f_blocks-fs.f_bavail)*fs.f_bsize) >> 30))
@@ -31,9 +31,9 @@
 #define MEM_USED ((int)((s.totalram - s.freeram)>>20))
 #define BATTERY (100*bat/bat_full)
 #define TEMPERATURE (temp/1000)
-#define ETH1_NAME (eth_name)
-#define ETH1_DOWNSPEED (downspeed)
-#define ETH1_UPSPEED (upspeed)
+#define NET_1_NAME (eth_name)
+#define NET_1_DOWNSPEED (downspeed)
+#define NET_1_UPSPEED (upspeed)
 #define DATE_YEAR (t->tm_year)
 #define DATE_MONTH (t->tm_mon)
 #define DATE_MONTHDAY (t->tm_mday)
@@ -72,7 +72,7 @@ int main()
 
     int temp;
 
-#ifdef PRINT_BATTERY
+#ifdef WITH_BATTERY
     f = fopen("/proc/acpi/battery/BAT0/info", "r");
     if (f) {
         if (fgets(buf, BUFSIZ, f) &&
@@ -89,7 +89,7 @@ int main()
     }
 #endif
 
-#ifdef PRINT_NETWORK
+#ifdef WITH_NET
     f = fopen("/proc/net/dev", "r");
     if (f) {
         if (fgets(buf, BUFSIZ, f) &&
@@ -111,27 +111,27 @@ int main()
 #endif
 
     for(;;) {
-#if defined(PRINT_UPTIME) || defined(PRINT_LOAD) || defined(PRINT_MEMORY)
+#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
         sysinfo(&s);
 #endif
 
-#ifdef PRINT_UPTIME
+#ifdef WITH_UP
         uptimes = s.uptime;
         hours = uptimes / ONEHOUR;
         upminh = uptimes - hours * ONEHOUR;
         minutes = upminh / ONEMINUTE;
 #endif
 
-#ifdef PRINT_TIME
+#ifdef WITH_DATE
         time(&the_time);
         t = localtime(&the_time);
 #endif
 
-#ifdef PRINT_DISK
+#ifdef WITH_ROOT
         statfs("/", &fs);
 #endif
 
-#ifdef PRINT_CPU
+#ifdef WITH_CPU
         f = fopen("/proc/stat", "r");
         if (f) {
             if ( fscanf(f, "cpu  %d %d %d %d %d %d %d %d",
@@ -147,7 +147,7 @@ int main()
         }
 #endif
 
-#ifdef PRINT_BATTERY
+#ifdef WITH_BATTERY
         f = fopen("/proc/acpi/battery/BAT0/state", "r");
         if (f) {
             if (fgets(buf, BUFSIZ, f) &&
@@ -162,7 +162,7 @@ int main()
         }
 #endif
 
-#ifdef PRINT_TEMPERATURE
+#ifdef WITH_TEMPERATURE
         f = fopen("/sys/class/hwmon/hwmon0/temp1_input", "r");
         if (f) {
             if ( fgets(buf, BUFSIZ, f) ) {
@@ -172,7 +172,7 @@ int main()
         }
 #endif
 
-#ifdef PRINT_NETWORK
+#ifdef WITH_NET
         f = fopen("/proc/net/dev", "r");
         if (f) {
             if (fgets(buf, BUFSIZ, f) &&
@@ -196,8 +196,12 @@ int main()
                 last_transmit = transmit;
                 sscanf(p, "%lld  %*d     %*d  %*d  %*d  %*d   %*d        %*d       %lld",
                         &recv, &transmit);
+#ifdef WITH_NET_1_DOWNSPEED
                 downspeed = (float)((recv-last_recv)/DELAY)/1024;
+#endif
+#ifdef WITH_NET_1_UPSPEED
                 upspeed = (float)((transmit-last_transmit)/DELAY)/1024;
+#endif
             }
             fclose(f);
         }

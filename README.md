@@ -1,3 +1,5 @@
+systeminfo
+==========
 Application `systeminfo` is simple console system monitoring tool.
 
 Basic invocation
@@ -17,25 +19,21 @@ Makefile variables:
 
 * `STATUS`
 
-  Format of output string.
+    Format of output string.
 
 * `DELAY`
 
-  Print status after DELAY seconds.
-
-* `FEATURES`
-
-  List of features to compile (can be combination of `UPTIME`, `CPU`, `LOAD`, `DISK`, `MEMORY`, `BATTERY`, `TEMPERATURE`, `NETWORK`, `TIME`).
+    Print status after DELAY seconds.
 
 Examples
 --------
 * CPU and memory usage (prints single line)
 
-        make STATUS='cpu: $(CPU_PERCENT) %   memory: $(MEM_USED) MiB\\r' rebuild
+        make STATUS='cpu: $(CPU_PERCENT) %   memory: $(MEM_USED) MiB\r' rebuild
         ./systeminfo
 
 * Network statistics (uses `$(call XXX,.2)` to print floating point number with two decimal places -- same as printf format string `%.2f`)
 
-        make STATUS='$(ETH1_NAME): download $(call ETH1_DOWNSPEED,.2) upload $(call ETH1_UPSPEED,.2)\\n' rebuild
+        make STATUS='$(ETH1_NAME): download $(call ETH1_DOWNSPEED,.2) upload $(call ETH1_UPSPEED,.2)\n' rebuild
         ./systeminfo
 

@@ -1,11 +1,12 @@
+#include "features.h"
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifdef WITH_DATE
 #include <time.h>
 #endif
-
-/*#include <linux/kernel.h>   */
 
 #if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
 #include <sys/sysinfo.h>
@@ -18,18 +19,6 @@
 #define ONEHOUR  3600
 #define ONEMINUTE  60
 #define LOADS_SCALE 65536.0
-
-#ifndef DELAY
-#if defined(USLEEP)
-#define DELAY 1e6
-#else
-#define DELAY 1
-#endif
-#endif
-
-#if DELAY > 1
-#include <unistd.h>
-#endif
 
 #define UP_HOURS (hours)
 #define UP_MINUTES (minutes)
@@ -62,6 +51,53 @@
 #define DATE_MINUTES (t->tm_min)
 #define DATE_SECONDS (t->tm_sec)
 
+#include <stdarg.h>
+
+char strbuf[4096];
+int last = 0;
+const char *str(const char *fmt, ...)
+{
+    int i = ++last;
+    va_list vl;
+
+    va_start(vl, fmt);
+    last += vsprintf(strbuf+last, fmt, vl);
+    va_end(vl);
+
+    return strbuf+i;
+}
+
+/*#define C(t,x)   ,({int i=++last; last+=sprintf(strbuf+last,"%"#t,(x)); strbuf+i;}),*/
+#define C(t,x)   ,str("%"#t, (x)),
+#define NUM(x)   C(d,(int)(x))
+#define FLOAT(x) C(.2f,(double)(x))
+#define STR(x)   C(s,(char *)(x))
+#define CHAR(x)  C(c,(char)(x))
+
+#ifndef DELAY
+#define DELAY 1
+#undef USLEEP
+#endif
+
+#if DELAY > 0
+#include <unistd.h>
+#endif
+
+#ifdef ALARM
+#include <signal.h>
+#endif
+
+#ifdef ALARM
+static void sig_alrm(int sig) {}
+#endif
+
+void print(const char **status) {
+    const char **p = status-1;
+    last = 0;
+    while(*++p) fputs(*p, stdout);
+    fflush(stdout);
+}
+
 int main()
 {
 #if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
@@ -84,19 +120,22 @@ int main()
 #endif
 
 #ifdef WITH_CPU
-	FILE *f;
     int cpu_user, cpu_nice, cpu_sys, cpu_idle, cpu_iowait, cpu_irq, cpu_softirq,
         cpu_steal, cpu_total = 0, cpu_active = 0;
     int cpu_last_total = 0;
     int cpu_last_active = 0;
 #endif
 
-#if defined(WITH_BATTERY) || defined(WITH_TEMPERATURE) || defined(WITH_NET)
-    char buf[BUFSIZ];
-#endif
-
 #ifdef WITH_TEMPERATURE
     int temperature;
+#endif
+
+#if defined(WITH_CPU) || defined(WITH_BATTERY) || defined(WITH_NET) || defined(WITH_TEMPERATURE)
+    FILE *f;
+#endif
+
+#if defined(WITH_BATTERY) || defined(WITH_NET) || defined(WITH_TEMPERATURE)
+    char buf[BUFSIZ];
 #endif
 
 #ifdef WITH_BATTERY
@@ -244,18 +283,29 @@ int main()
         }
 #endif
 
-#define IGNORE(x)
-#define BACKSLASH "\\"
-#define QUOTE "\""
-        printf(PRINT_STR, PRINT_ARGS);
-        fflush(stdout);
+        const char *status[] = {"" STATUS "",0};
+        print(status);
 
-#if DELAY > 0
-#if defined(USLEEP)
+#ifdef USLEEP
+#  ifdef ALARM
+        signal(SIGALRM, sig_alrm);
+#    if DELAY > 0
+        ualarm(DELAY, 0);
+#    endif
+        pause();
+#  elif DELAY > 0
         usleep(DELAY);
-#else
+#  endif
+#else /* !USLEEP */
+#  ifdef ALARM
+        signal(SIGALRM, sig_alrm);
+#    if DELAY > 0
+        alarm(DELAY);
+#    endif
+        pause();
+#  elif DELAY > 0
         sleep(DELAY);
-#endif
+#  endif
 #endif
     }
 

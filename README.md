@@ -11,11 +11,11 @@ To build the application and run it run following commands.
 
 Configuration
 -------------
-Configuration can be changed by editing `config.mk` file and setting Makefile variables. See default configuration in `config_default.mk` file.
+Configuration can be changed by editing `config.h` file and setting Makefile variables. See default configuration in `config.def.h` file.
 
 After changing configuration the application needs to be rebuilt with `` `make rebuild` `` command.
 
-Makefile variables:
+User adjustable C macros in `config.h` file:
 
 * `STATUS`
 
@@ -30,20 +30,24 @@ Makefile variables:
 
     If `USLEEP` is 1 then `DELAY` is in microseconds.
 
+* `ALARM
+
+    If `ALARM` is set then status is updated every time the application recieves SIGALRM signal.
+
 Examples
 --------
 * CPU and memory usage (prints single line)
 
-        make STATUS='cpu: $(CPU_PERCENT) %   memory: $(MEM_USED) MiB\r' rebuild
+        make STATUS='"cpu: "NUM(CPU_PERCENT)" %   memory: "NUM(MEM_USED)" MiB\r"' rebuild
         ./systeminfo
 
-* Network statistics (uses `$(call XXX,.2)` to print floating point number with two decimal places -- same as printf format string `%.2f`)
+* Network statistics (uses `.2f` to print floating point number with two decimal places -- same as printf format string `%.2f`)
 
-        make STATUS='$(ETH1_NAME): download $(call ETH1_DOWNSPEED,.2) upload $(call ETH1_UPSPEED,.2)\n' rebuild
+        make STATUS='STR(NET_1_NAME)": download "C(.2f,NET_1_DOWNSPEED)" upload "C(.2f,NET_1_UPSPEED)"\n"' rebuild
         ./systeminfo
 
 * Simple counter (increased every millisecond)
 
-        make STATUS='$(call C,({static i;i++;}),8d) ms\r' DELAY=1000 USLEEP=1 rebuild
+        make STATUS='C(8d,{static i;i++;})" ms\r"' DELAY=1000 USLEEP=1 rebuild
         ./systeminfo
 

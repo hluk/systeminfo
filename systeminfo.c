@@ -1,5 +1,5 @@
 #include "features.h"
-#include "config.h"
+#include "config.current.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 #include <time.h>
 #endif
 
-#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
+#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM) || defined(WITH_SWAP)
 #include <sys/sysinfo.h>
 #endif
 
@@ -24,7 +24,7 @@
 #define UP_MINUTES (minutes)
 #define CPU_TOTAL (cpu_total)
 #define CPU_ACTIVE (cpu_active)
-#define CPU (((cpu_active-cpu_last_active)<<10)/(cpu_total-cpu_last_total+1))
+#define CPU ((double)(cpu_active-cpu_last_active)/(cpu_total-cpu_last_total+1))
 #define CPU_PERCENT (100*(cpu_active-cpu_last_active)/(cpu_total-cpu_last_total+1))
 #define LOAD_1 (s.loads[0]/LOADS_SCALE)
 #define LOAD_2 (s.loads[1]/LOADS_SCALE)
@@ -35,6 +35,9 @@
 #define MEM_SIZE ((int)(s.totalram>>20))
 #define MEM_FREE ((int)(s.freeram>>20))
 #define MEM_USED ((int)((s.totalram - s.freeram)>>20))
+#define SWAP_SIZE ((int)(s.totalswap>>20))
+#define SWAP_FREE ((int)(s.freeswap>>20))
+#define SWAP_USED ((int)((s.totalswap - s.freeswap)>>20))
 #define BATTERY (100*bat/bat_full)
 #define TEMPERATURE (temperature/1000)
 #define NET_1_NAME (eth_name)
@@ -50,29 +53,6 @@
 #define DATE_HOURS (t->tm_hour)
 #define DATE_MINUTES (t->tm_min)
 #define DATE_SECONDS (t->tm_sec)
-
-#include <stdarg.h>
-
-char strbuf[4096];
-int last = 0;
-const char *str(const char *fmt, ...)
-{
-    int i = ++last;
-    va_list vl;
-
-    va_start(vl, fmt);
-    last += vsprintf(strbuf+last, fmt, vl);
-    va_end(vl);
-
-    return strbuf+i;
-}
-
-/*#define C(t,x)   ,({int i=++last; last+=sprintf(strbuf+last,"%"#t,(x)); strbuf+i;}),*/
-#define C(t,x)   ,str("%"#t, (x)),
-#define NUM(x)   C(d,(int)(x))
-#define FLOAT(x) C(.2f,(double)(x))
-#define STR(x)   C(s,(char *)(x))
-#define CHAR(x)  C(c,(char)(x))
 
 #ifndef DELAY
 #define DELAY 1
@@ -91,16 +71,9 @@ const char *str(const char *fmt, ...)
 static void sig_alrm(int sig) {}
 #endif
 
-void print(const char **status) {
-    const char **p = status-1;
-    last = 0;
-    while(*++p) fputs(*p, stdout);
-    fflush(stdout);
-}
-
 int main()
 {
-#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
+#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM) || defined(WITH_SWAP)
 	struct sysinfo s;
 #endif
 
@@ -187,7 +160,7 @@ int main()
     for(;;)
 #endif
     {
-#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM)
+#if defined(WITH_UP) || defined(WITH_LOAD) || defined(WITH_MEM) || defined(WITH_SWAP)
         sysinfo(&s);
 #endif
 
@@ -283,8 +256,22 @@ int main()
         }
 #endif
 
-        const char *status[] = {"" STATUS "",0};
-        print(status);
+#define A        fputs(
+#define B        "",stdout)
+#define IF(x)    B;if(x){A
+#define ELIF(x)  B;}else if(x){A
+#define ELSE     B;}else{A
+#define ENDIF    B;};A
+#define WHILE(x) B;while(x){A
+#define FOR(x)   B;for(x){A
+#define END      B;};A
+#define C(t,x)   B;printf("%"#t,(x));A
+#define NUM(x)   C(d,(int)(x))
+#define FLOAT(x) C(.2f,(double)(x))
+#define STR(x)   C(s,(char *)(x))
+#define CHAR(x)  C(c,(char)(x))
+    A STATUS B;
+    fflush(stdout);
 
 #ifdef USLEEP
 #  ifdef ALARM

@@ -30,9 +30,17 @@ User adjustable C macros in `config.h` file:
 
     If `USLEEP` is 1 then `DELAY` is in microseconds.
 
-* `ALARM
+* `ALARM`
 
-    If `ALARM` is set then status is updated every time the application recieves SIGALRM signal.
+    If `ALARM` is set then status is updated every time the application recieves `SIGALRM` signal.
+
+* `CONFIG`
+
+    Filename of header file with configuration.
+
+* `OUTFILE`
+
+    Output binary filename.
 
 Examples
 --------

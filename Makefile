@@ -10,20 +10,34 @@ endif
 ifdef STATUS
 	override CFLAGS += -DSTATUS='$(STATUS)'
 	override CPPFLAGS += -DSTATUS='$(STATUS)'
+	CLEAN_FEATURES = 1
 .PHONY: features.h
 endif
+ifdef CONFIG
+	CLEAN_FEATURES = 1
+.PHONY: features.h
+else
+	CONFIG = config.h
+endif
+
+OUTFILE = systeminfo
 
 .PHONY:
-all: systeminfo
+all: $(OUTFILE)
 
 .PHONY:
 rebuild: clean systeminfo
 
-systeminfo: systeminfo.c config.h features.h
+$(OUTFILE): systeminfo.c $(CONFIG) features.h
+	if [ -n '$(CONFIG)' ]; then \
+		cp $(CONFIG) config.current.h; \
+	else \
+		> config.current.h; \
+	fi
 	$(CC) $(CFLAGS) -std=c99 -Wall $< -o $@
-	test -z '$(STATUS)' || $(RM) features.h
+	[ -z '$(CLEAN_FEATURES)' ] || $(RM) features.h
 
-features.h: config.h
+features.h: $(CONFIG)
 	(echo '#define IGNORE(x)'; \
 		echo -e \
 		'#ifndef STATUS\n' \

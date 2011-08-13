@@ -19,6 +19,30 @@
 static void sig_alrm(int sig) {}
 #endif
 
+#ifdef XSETROOT
+static int printfX(const char *fmt, ...)
+{
+    va_list ap;
+    int res;
+
+    va_start(ap, fmt);
+    res = vsprintf(pname, fmt, ap);
+    pname += res;
+    va_end(ap);
+
+    return res;
+}
+
+static int fputsX(const char *s, FILE *stream)
+{
+    int l = strlen(s);
+    strncpy(pname, s, l);
+    pname += l;
+
+    return 1;
+}
+#endif
+
 int main()
 {
 #if defined(WITH_CPU) || defined(WITH_BATTERY) || defined(WITH_NET) || defined(WITH_TEMPERATURE)

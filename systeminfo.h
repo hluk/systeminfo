@@ -98,31 +98,13 @@
 #include <X11/Xlib.h>
 static char name[1024];
 static char *pname;
+static int printfX(const char *fmt, ...);
+static int fputsX(const char *s, FILE *stream);
 #define fputs fputsX
 #define printf printfX
-static int printfX(const char *fmt, ...)
-{
-    va_list ap;
-    int res;
-
-    va_start(ap, fmt);
-    res = vsprintf(pname, fmt, ap);
-    pname += res;
-    va_end(ap);
-
-    return res;
-}
-static int fputsX(const char *s, FILE *stream)
-{
-    int l = strlen(s);
-    strncpy(pname, s, l);
-    pname += l;
-
-    return 1;
-}
-#define fputc(c,_) *(pname++)=c;*pname=0
-#define fflush(_) XStoreName(dpy, RootWindow(dpy, DefaultScreen(dpy)), name);XCloseDisplay(dpy);
-#define fwrite(x,y,len,z) strncpy(pname,x,len);pname+=len;*pname=0;
+#define fputc(c,_) *(pname++)=c;
+#define fflush(_) *pname=0;XStoreName(dpy, RootWindow(dpy, DefaultScreen(dpy)), name);XCloseDisplay(dpy);
+#define fwrite(x,y,len,z) strncpy(pname,x,len);pname+=len;
 #endif
 
 #endif

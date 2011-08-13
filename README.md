@@ -42,6 +42,10 @@ User adjustable C macros in `config.h` file:
 
     Output binary filename.
 
+* `XSETROOT`
+
+    Instead of printing status on standard output, set name of root window in X11 (this sets status bar massage in some X11 window managers).
+
 Examples
 --------
 * CPU and memory usage (prints single line)

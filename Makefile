@@ -7,6 +7,10 @@ endif
 ifdef ALARM
 	override CFLAGS += -DALARM='$(ALARM)'
 endif
+ifdef XSETROOT
+	override CFLAGS += -DXSETROOT='$(XSETROOT)'
+	override LDFLAGS += -lX11
+endif
 ifdef STATUS
 	override CFLAGS += -DSTATUS='$(STATUS)'
 	override CPPFLAGS += -DSTATUS='$(STATUS)'
@@ -34,7 +38,7 @@ $(OUTFILE): systeminfo.c $(CONFIG) features.h
 	else \
 		> config.current.h; \
 	fi
-	$(CC) $(CFLAGS) -std=c99 -Wall $< -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -std=c99 -Wall $< -o $@
 	[ -z '$(CLEAN_FEATURES)' ] || $(RM) features.h
 
 features.h: $(CONFIG)
@@ -43,12 +47,18 @@ features.h: $(CONFIG)
 		'#ifndef STATUS\n' \
 		'#include "$<"\n' \
 		'#endif\n' \
-		'#define C(t,x)   )x IGNORE(\n' \
-		'#define NUM(x)   C(d,x)\n' \
-		'#define FLOAT(x) C(g,x)\n' \
-		'#define STR(x)   C(s,x)\n' \
-		'#define CHAR(x)  C(c,x)\n' \
-		'\nFEATURES: IGNORE(STATUS)' | cpp $(CPPFLAGS) \
+		'#define C(t,x)   )x IGNORE(""\n' \
+		'#define IF(x)    C(,x)\n' \
+		'#define ELIF(x)  C(,x)\n' \
+		'#define ELSE(x)  C(,x)\n' \
+		'#define WHILE(x) C(,x)\n' \
+		'#define FOR(x)   C(,x)\n' \
+		'#define NUM(x)   C(,x)\n' \
+		'#define FLOAT(x) C(,x)\n' \
+		'#define STR(x)   C(,x)\n' \
+		'#define CHAR(x)  C(,x)\n' \
+		'#define DO(x)' \
+		'\nFEATURES: IGNORE(""STATUS)' | cpp $(CPPFLAGS) \
 		) | cpp $(CPPFLAGS) | \
 		sed -nr '/^FEATURES: /{s/\S*:/#define FEATURES/;s/[^A-Z]*((([A-Z]+)[A-Z_]*[0-9]?)[A-Z_]*)\S*/\n#define WITH_\3\n#define WITH_\2\n#define WITH_\1/g;p;q}' | \
 		sort -u > $@

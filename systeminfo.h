@@ -96,11 +96,11 @@
 #include <stdarg.h>
 #include <string.h>
 #include <X11/Xlib.h>
-char name[1024];
-char *pname;
+static char name[1024];
+static char *pname;
 #define fputs fputsX
 #define printf printfX
-int printfX(const char *fmt, ...)
+static int printfX(const char *fmt, ...)
 {
     va_list ap;
     int res;
@@ -112,7 +112,7 @@ int printfX(const char *fmt, ...)
 
     return res;
 }
-int fputsX(const char *s, FILE *stream)
+static int fputsX(const char *s, FILE *stream)
 {
     int l = strlen(s);
     strncpy(pname, s, l);

@@ -15,7 +15,7 @@ Configuration can be changed by editing `config.h` file and setting Makefile var
 
 After changing configuration the application needs to be rebuilt with `` `make rebuild` `` command.
 
-User adjustable C macros in `config.h` file:
+User adjustable C macros (in `config.h` file) and Makefile variables:
 
 * `STATUS`
 
@@ -34,15 +34,15 @@ User adjustable C macros in `config.h` file:
 
     If `ALARM` is set then status is updated every time the application recieves `SIGALRM` signal.
 
-* `CONFIG`
+* `CONFIG` (Makefile variable only)
 
     Filename of header file with configuration.
 
-* `OUTFILE`
+* `OUTFILE` (Makefile variable only)
 
     Output binary filename.
 
-* `XSETROOT`
+* `XSETROOT` (Makefile variable only)
 
     Instead of printing status on standard output, set name of root window in X11 (this sets status bar massage in some X11 window managers).
 

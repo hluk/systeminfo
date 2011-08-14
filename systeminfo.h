@@ -43,8 +43,6 @@
 #define NET_1_NAME (eth_name)
 #define NET_1_DOWNSPEED (downspeed)
 #define NET_1_UPSPEED (upspeed)
-#define NET_DOWNSPEED(x)
-#define NET_UPSPEED(x)
 #define DATE_YEAR (t->tm_year)
 #define DATE_MONTH (t->tm_mon)
 #define DATE_MONTHDAY (t->tm_mday)

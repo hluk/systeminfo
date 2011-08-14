@@ -1,6 +1,155 @@
 #include "features.h"
 #include "systeminfo.h"
 
+#ifdef LUA
+#include <lua.h>
+#include <lauxlib.h>
+#include <string.h>
+
+lua_State *L;
+void luaL_openlibs (lua_State *L);
+
+typedef struct LoadF {
+    FILE *f;
+    char buff[BUFSIZ];
+    int init;
+} LoadF;
+
+static const char *getF (lua_State *L, void *ud, size_t *size) {
+    LoadF *lf = (LoadF *)ud;
+    if (lf->init) {
+        lf->init = 0;
+        char *init_str =
+            "C = function(fmt,x) return string.format('%'..fmt,x) end;"
+            "NUM = function(x)   return string.format('%d',x) end;"
+            "FLOAT = function(x) return string.format('%.2f',x) end;";
+        *size = strlen(init_str);
+        return init_str;
+    }
+    if (feof(lf->f)) return NULL;
+    *size = fread(lf->buff, 1, sizeof(lf->buff), lf->f);  /* read block */
+    return lf->buff;
+}
+
+static void loadlua() {
+    LoadF lf;
+    int status, readstatus;
+
+    lf.f = fopen(LUA, "r");
+    if (lf.f == NULL) {
+        perror(LUA);
+        exit(1);
+    }
+
+    lf.init = 1;
+    status = lua_load(L, getF, &lf, lua_tostring(L, -1));
+    readstatus = ferror(lf.f);
+    fclose(lf.f);  /* close file (even in case of errors) */
+
+    if (readstatus) {
+        perror(LUA);
+        exit(1);
+    }
+
+    if (status) {
+        lua_pushstring(L, LUA);
+        lua_error(L);
+    }
+}
+
+static int l_status(lua_State *L)
+{
+    int i, j, n;
+
+    for ( i=1, n=lua_gettop(L); i<=n; ++i ) {
+        if ( lua_isstring(L, i) ) {
+            status_puts( lua_tostring(L, i) );
+        } else if ( lua_istable(L, i) ) {
+            /* unpack table */
+            j = 0;
+            do {
+                lua_pushinteger(L, ++j);
+                lua_gettable(L, i);
+                lua_insert(L, i+j);
+            } while ( !lua_isnil(L, i+j) );
+            lua_remove(L, i+j);
+            n += j-1;
+        }
+    }
+
+    return 0;
+}
+
+#define SET_LUA_VAR(x,y) \
+    lua_push##y(L, x); \
+    lua_setglobal(L, #x);
+
+static void status()
+{
+#ifdef WITH_CPU
+    SET_LUA_VAR(CPU, number);
+    SET_LUA_VAR(CPU_TOTAL, number);
+    SET_LUA_VAR(CPU_ACTIVE, number);
+    SET_LUA_VAR(CPU_PERCENT, number);
+#endif
+#ifdef WITH_UP
+    SET_LUA_VAR(UP_MINUTES, number);
+    SET_LUA_VAR(UP_HOURS, number);
+#endif
+#ifdef WITH_LOAD
+    SET_LUA_VAR(LOAD_1, number);
+    SET_LUA_VAR(LOAD_2, number);
+    SET_LUA_VAR(LOAD_3, number);
+#endif
+#ifdef WITH_ROOT
+    SET_LUA_VAR(ROOT_SIZE, number);
+    SET_LUA_VAR(ROOT_FREE, number);
+    SET_LUA_VAR(ROOT_USED, number);
+#endif
+#ifdef WITH_MEM
+    SET_LUA_VAR(MEM_SIZE, number);
+    SET_LUA_VAR(MEM_FREE, number);
+    SET_LUA_VAR(MEM_USED, number);
+#endif
+#ifdef WITH_SWAP
+    SET_LUA_VAR(SWAP_SIZE, number);
+    SET_LUA_VAR(SWAP_FREE, number);
+    SET_LUA_VAR(SWAP_USED, number);
+#endif
+#ifdef WITH_BATTERY
+    SET_LUA_VAR(BATTERY, number);
+#endif
+#ifdef WITH_TEMPERATURE
+    SET_LUA_VAR(TEMPERATURE, number);
+#endif
+#ifdef WITH_UP
+    SET_LUA_VAR(UP_MINUTES, number);
+    SET_LUA_VAR(UP_HOURS, number);
+#endif
+#ifdef WITH_NET
+    SET_LUA_VAR(NET_1_NAME, string);
+    SET_LUA_VAR(NET_1_UPSPEED, number);
+    SET_LUA_VAR(NET_1_DOWNSPEED, number);
+#endif
+#ifdef WITH_DATE
+    SET_LUA_VAR(DATE_YEAR, number);
+    SET_LUA_VAR(DATE_MONTH, number);
+    SET_LUA_VAR(DATE_MONTHDAY, number);
+    SET_LUA_VAR(DATE_WEEKDAY, number);
+    SET_LUA_VAR(DATE_YEARDAY, number);
+    SET_LUA_VAR(DATE_HOURS, number);
+    SET_LUA_VAR(DATE_MINUTES, number);
+    SET_LUA_VAR(DATE_SECONDS, number);
+#endif
+
+    lua_pushvalue(L, 1);
+    if( lua_pcall(L, 0, 0, 0) ) {
+        lua_pushstring(L, LUA);
+        lua_error(L);
+    }
+    status_flush();
+}
+#else /* !LUA */
 #define A        status_puts(""
 #define B        )
 #define IF(x)    B;if(x){A
@@ -33,6 +182,7 @@ STATUS
 B;
 status_flush();
 };
+#endif
 
 #ifndef DELAY
 #define DELAY 1
@@ -77,6 +227,14 @@ static void status_puts(const char *s)
 
 int main()
 {
+#ifdef LUA
+    L = luaL_newstate();
+    luaL_openlibs(L);
+
+	loadlua();
+    lua_register(L, "status", l_status);
+#endif
+
 #if defined(WITH_CPU) || defined(WITH_BATTERY) || defined(WITH_NET) || defined(WITH_TEMPERATURE)
     FILE *f;
 #endif
@@ -212,12 +370,8 @@ int main()
                 last_transmit = transmit;
                 sscanf(p, "%lld  %*d     %*d  %*d  %*d  %*d   %*d        %*d       %lld",
                         &recv, &transmit);
-#ifdef WITH_NET_1_DOWNSPEED
                 downspeed = (float)((recv-last_recv)/DELAY)/1024;
-#endif
-#ifdef WITH_NET_1_UPSPEED
                 upspeed = (float)((transmit-last_transmit)/DELAY)/1024;
-#endif
             }
             fclose(f);
         }

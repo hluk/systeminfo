@@ -13,5 +13,5 @@ ENDIF
 "  TEMP:" C(d,TEMPERATURE) "°"
 "  " C(s,NET_1_NAME) ":" FLOAT(NET_1_DOWNSPEED) " " FLOAT(NET_1_UPSPEED)
 "  " NUM(DATE_MONTHDAY) "/" NUM(DATE_MONTH) "  " C(02d,DATE_HOURS) ":" C(02d,DATE_MINUTES)
-" \r"
+"                       \r"
 

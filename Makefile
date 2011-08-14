@@ -44,9 +44,6 @@ $(OUTFILE): systeminfo.c $(CONFIG) features.h
 features.h: $(CONFIG)
 	(echo '#define IGNORE(x)'; \
 		echo -e \
-		'#ifndef STATUS\n' \
-		'#include "$<"\n' \
-		'#endif\n' \
 		'#define C(t,x)   )x IGNORE(""\n' \
 		'#define IF(x)    C(,x)\n' \
 		'#define ELIF(x)  C(,x)\n' \
@@ -57,10 +54,16 @@ features.h: $(CONFIG)
 		'#define FLOAT(x) C(,x)\n' \
 		'#define STR(x)   C(,x)\n' \
 		'#define CHAR(x)  C(,x)\n' \
-		'#define DO(x)' \
-		'\nFEATURES: IGNORE(""STATUS)' | cpp $(CPPFLAGS) \
+		'#define DO(x)\n' \
+		'#define BEGIN FEATURES: IGNORE(""\n' \
+		'#ifdef STATUS\n' \
+		'BEGIN STATUS\n' \
+		'#else\n' \
+		'#define STATUS BEGIN\n' \
+		'#include "$<"\n' \
+		'#endif\n)' | cpp $(CPPFLAGS) \
 		) | cpp $(CPPFLAGS) | \
-		sed -nr '/^FEATURES: /{s/\S*:/#define FEATURES/;s/[^A-Z]*((([A-Z]+)[A-Z_]*[0-9]?)[A-Z_]*)\S*/\n#define WITH_\3\n#define WITH_\2\n#define WITH_\1/g;p;q}' | \
+		sed -nr '/^\s*FEATURES:/,$${s/[^A-Z]*((([A-Z]+)[A-Z_]*[0-9]?)[A-Z_]*)\S*/\n#define WITH_\3\n#define WITH_\2\n#define WITH_\1/g;p;}' | \
 		sort -u > $@
 
 config.h:

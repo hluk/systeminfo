@@ -19,7 +19,7 @@ User adjustable C macros (in `config.h` file) and Makefile variables:
 
 * `STATUS`
 
-    Format of output string.
+    Format of output string. If this macro is used in `config.h` everything after it is considered status string (see `config.def.h`).
 
 * `DELAY`
 

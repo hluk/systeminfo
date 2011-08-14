@@ -92,19 +92,21 @@
     static long long recv, transmit, last_recv, last_transmit;
 #endif
 
+static void status_puts(const char *s);
+
 #ifdef XSETROOT
 #include <stdarg.h>
 #include <string.h>
 #include <X11/Xlib.h>
 static char name[1024];
 static char *pname;
-static int printfX(const char *fmt, ...);
-static int fputsX(const char *s, FILE *stream);
-#define fputs fputsX
-#define printf printfX
-#define fputc(c,_) *(pname++)=c;
-#define fflush(_) *pname=0;XStoreName(dpy, RootWindow(dpy, DefaultScreen(dpy)), name);XCloseDisplay(dpy);
-#define fwrite(x,y,len,z) strncpy(pname,x,len);pname+=len;
+static void status_flush();
+#define status_printf(fmt,x) pname += sprintf(pname,fmt,x)
+#define fputc(c,_) *(pname++)=c
+#define fwrite(x,y,len,z) strncpy(pname,x,len);pname+=len
+#else
+#define status_printf(fmt,x) printf(fmt,x)
+#define status_flush() fflush(stdout)
 #endif
 
 #endif

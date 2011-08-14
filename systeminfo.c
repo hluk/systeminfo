@@ -1,6 +1,38 @@
 #include "features.h"
 #include "systeminfo.h"
+
+#define A        status_puts(""
+#define B        )
+#define IF(x)    B;if(x){A
+#define ELIF(x)  B;}else if(x){A
+#define ELSE     B;}else{A
+#define ENDIF    B;};A
+#define WHILE(x) B;while(x){A
+#define FOR(x)   B;for(x){A
+#define END      B;};A
+#define DO(x)    B;(x);A
+#define C(t,x)   B;status_printf("%"#t,(x));A
+#define NUM(x)   C(d,(int)(x))
+#define FLOAT(x) C(.2f,(double)(x))
+#define STR(x)   C(s,(char *)(x))
+#define CHAR(x)  C(c,(char)(x))
+
+#ifdef XSETROOT
+#define BEGIN static void status(){ pname=name;*pname=0;A
+#else
+#define BEGIN static void status(){A
+#endif
+
+#ifdef STATUS
+BEGIN
+STATUS
+#else
+#define STATUS BEGIN
 #include "config.current.h"
+#endif
+B;
+status_flush();
+};
 
 #ifndef DELAY
 #define DELAY 1
@@ -20,26 +52,26 @@ static void sig_alrm(int sig) {}
 #endif
 
 #ifdef XSETROOT
-static int printfX(const char *fmt, ...)
+static void status_puts(const char *s)
 {
-    va_list ap;
-    int res;
-
-    va_start(ap, fmt);
-    res = vsprintf(pname, fmt, ap);
-    pname += res;
-    va_end(ap);
-
-    return res;
+    strcpy(pname, s);
+    pname += strlen(s);
 }
-
-static int fputsX(const char *s, FILE *stream)
+static void status_flush()
 {
-    int l = strlen(s);
-    strncpy(pname, s, l);
-    pname += l;
-
-    return 1;
+    Display *dpy;
+    if( !(dpy = XOpenDisplay(0)) ) {
+        perror("Cannot open X11 display");
+        exit(1);
+    }
+    *pname=0;
+    XStoreName(dpy, RootWindow(dpy, DefaultScreen(dpy)), name);
+    XCloseDisplay(dpy);
+}
+#else
+static void status_puts(const char *s)
+{
+    fputs(s,stdout);
 }
 #endif
 
@@ -191,33 +223,7 @@ int main()
         }
 #endif
 
-#ifdef XSETROOT
-    Display *dpy;
-    if( !(dpy = XOpenDisplay(0)) ) {
-        perror("Cannot open X11 display!");
-        exit(1);
-    }
-    name[0] = 0;
-    pname = name;
-#endif
-
-#define A        fputs(
-#define B        "",stdout)
-#define IF(x)    B;if(x){A
-#define ELIF(x)  B;}else if(x){A
-#define ELSE     B;}else{A
-#define ENDIF    B;};A
-#define WHILE(x) B;while(x){A
-#define FOR(x)   B;for(x){A
-#define END      B;};A
-#define DO(x)    B;(x);A
-#define C(t,x)   B;printf("%"#t,(x));A
-#define NUM(x)   C(d,(int)(x))
-#define FLOAT(x) C(.2f,(double)(x))
-#define STR(x)   C(s,(char *)(x))
-#define CHAR(x)  C(c,(char)(x))
-    A STATUS B;
-    fflush(stdout);
+    status();
 
 #ifdef USLEEP
 #  ifdef ALARM

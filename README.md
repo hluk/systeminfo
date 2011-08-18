@@ -56,6 +56,10 @@ Makefile variables:
 
     List of features (default is all features, e.g. `FEATURES="BATTERY CPU DATE LOAD MEM NET ROOT SWAP TEMPERATURE UP"`).
 
+* `PRESET`
+
+    Sets `CONFIG=config.$(PRESET).h`, `OUTFILE=systeminfo_$(PRESET)` and loads `$(PRESET).mk` file from Makefile.
+
 Examples
 --------
 * CPU and memory usage (prints single line)

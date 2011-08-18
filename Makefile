@@ -3,6 +3,11 @@ CONFIG = config.h
 OUTFILE = systeminfo
 FEATURES = BATTERY CPU DATE LOAD MEM NET ROOT SWAP TEMPERATURE UP
 
+ifdef PRESET
+	override CONFIG = config.$(PRESET).h
+	override OUTFILE = systeminfo_$(PRESET)
+	include $(wildcard $(PRESET).mk)
+endif
 ifdef DELAY
 	override CFLAGS += -DDELAY='$(DELAY)'
 endif
@@ -25,20 +30,15 @@ ifdef STATUS
 	override CPPFLAGS += -DSTATUS='$(STATUS)'
 endif
 
-override CFLAGS += $(addprefix -DWITH_,$(FEATURES))
+override CFLAGS += $(addprefix -DWITH_,$(FEATURES)) -DCONFIG='"$(CONFIG)"'
 
 .PHONY:
 all: $(OUTFILE)
 
 .PHONY:
-rebuild: clean systeminfo
+rebuild: clean $(OUTFILE)
 
 $(OUTFILE): systeminfo.c $(CONFIG)
-	if [ -n '$(CONFIG)' ]; then \
-		cp $(CONFIG) config.current.h; \
-	else \
-		> config.current.h; \
-	fi
 	$(CC) -std=c99 -Wall $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 config.h:
@@ -46,5 +46,5 @@ config.h:
 
 .PHONY:
 clean:
-	$(RM) systeminfo
+	$(RM) $(OUTFILE)
 

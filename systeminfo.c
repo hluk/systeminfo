@@ -1,4 +1,3 @@
-#include "features.h"
 #include "systeminfo.h"
 
 #ifdef LUA
@@ -177,7 +176,11 @@ BEGIN
 STATUS
 #else
 #define STATUS BEGIN
-#include "config.current.h"
+#ifdef CONFIG
+#include CONFIG
+#else
+#include "config.h"
+#endif
 #endif
 B;
 status_flush();
